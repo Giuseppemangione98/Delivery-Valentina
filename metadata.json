@@ -1,0 +1,7 @@
+{
+  "name": "Valentina's Delivery",
+  "description": "A playful, mobile-first delivery app with real-time tracking, loving messages, and Gemini-powered support.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
