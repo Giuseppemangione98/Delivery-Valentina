@@ -217,13 +217,20 @@ const App: React.FC = () => {
               </p>
             </div>
             
-            <button 
-  onClick={() => {
-    // Chiede il permesso quando clicchi "Entra"
-    if ("Notification" in window) {
-      Notification.requestPermission().then(permission => {
-        console.log("Stato permesso:", permission);
-      });
+ <button 
+  onClick={async () => {
+    try {
+      if (!("Notification" in window)) {
+        alert("Questo browser non supporta le notifiche.");
+      } else {
+        const permission = await Notification.requestPermission();
+        alert("Risposta permesso: " + permission);
+        if (permission === "granted") {
+          new Notification("Notifiche Attive!", { body: "Ora riceverai gli aggiornamenti ❤️" });
+        }
+      }
+    } catch (error) {
+      alert("Errore durante la richiesta: " + error);
     }
     setView('selection');
   }} 
