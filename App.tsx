@@ -29,8 +29,9 @@ const App: React.FC = () => {
     "Quasi pronto, Valentina! ❤️"
   ];
 
-  // Load history from localStorage on mount
+  // 1. Inizializzazione: Cronologia, PWA e Notifiche
   useEffect(() => {
+    // Caricamento Cronologia
     const savedHistory = localStorage.getItem('valentina_order_history');
     if (savedHistory) {
       try {
@@ -40,29 +41,44 @@ const App: React.FC = () => {
       }
     }
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        (err) => console.warn("Geo denied")
-      );
+    // Registrazione PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker Registrato!'))
+        .catch(err => console.log('Errore SW:', err));
     }
-  }, []);
+
+    // Richiesta Permessi Notifiche
+    if ("Notification" in window) {
+      Notification.requestPermission();
+    }
+  }, []); // Qui si chiude correttamente tutto il blocco di avvio
 
   // Save history to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('valentina_order_history', JSON.stringify(orderHistory));
-  }, [orderHistory]);
+    // --- SENSORE TRACKING REALE ---
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
 
-  const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(i => i.id === product.id);
-      if (existing) {
-        return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-      }
-      return [...prev, { ...product, quantity: 1 }];
-    });
-  };
+    if (view === 'tracking' && lastOrder.length > 0) {
+      interval = setInterval(async () => {
+        try {
+          const API_URL = "https://script.google.com/macros/s/AKfycbxUNiIGJckV4Y6edK-hikVPMx8kEgySjT3az-apjwP1uy-VlHZMr_XZ6p_vxPhm9A5j/exec";
+          // Chiediamo al database lo stato di questo specifico ordine
+          const response = await fetch(`${API_URL}?orderId=${lastOrder[0].id}`);
+          const data = await response.json();
+          
+          if (data.status) {
+            setOrderStatus(data.status as OrderStatus);
+          }
+        } catch (e) {
+          console.log("In attesa di aggiornamenti da Giuseppe...");
+        }
+      }, 5000); // Controlla ogni 5 secondi
+    }
 
+    return () => clearInterval(interval);
+  }, [view, lastOrder]);
   const updateQuantity = (id: string, delta: number) => {
     setCart(prev => prev.map(i => {
       if (i.id === id) {
@@ -116,9 +132,6 @@ const App: React.FC = () => {
       setCart([]);
       setIsProcessing(false);
       
-      setTimeout(() => setOrderStatus(OrderStatus.PREPARING), 3000);
-      setTimeout(() => setOrderStatus(OrderStatus.ON_THE_WAY), 8000);
-      setTimeout(() => setOrderStatus(OrderStatus.DELIVERED), 20000);
     }, 3500);
   };
 
