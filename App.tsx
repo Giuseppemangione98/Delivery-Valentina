@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { PRODUCTS } from './constants.tsx';
 import { CartItem, Product, OrderStatus, Category, Location, OrderHistoryItem } from './types';
@@ -72,13 +73,11 @@ const App: React.FC = () => {
     }).filter(i => i.quantity > 0));
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     setIsCartOpen(false);
     setIsProcessing(true);
     
-    // URL del database
-    const API_URL = "https://script.google.com/macros/s/AKfycbxUNiIGJckV4Y6edK-hikVPMx8kEgySjT3az-apjwP1uy-VlHZMr_XZ6p_vxPhm9A5j/exec";
-
+    // Cycle through loading messages
     let msgIndex = 0;
     setLoadingMessage(loadingMessages[0]);
     const interval = setInterval(() => {
@@ -88,26 +87,12 @@ const App: React.FC = () => {
       }
     }, 1000);
 
-    const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const orderId = `VALE-${Date.now()}`;
-
-    // INVIO DATI
-    fetch(API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: orderId,
-        message: "Nuova richiesta da Valentina! ❤️",
-        items: cart.map(item => ({ name: item.name, emoji: item.emoji, quantity: item.quantity })),
-        total: total
-      })
-    });
-
+    // After 3 seconds, complete the order
     setTimeout(() => {
       clearInterval(interval);
+      const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
       const newOrder: OrderHistoryItem = {
-        id: orderId,
+        id: `VALE-${Date.now()}`,
         date: new Date().toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
         items: [...cart],
         totalFavors: total
@@ -120,43 +105,182 @@ const App: React.FC = () => {
       setCart([]);
       setIsProcessing(false);
       
-      // Simulazione stati originali
       setTimeout(() => setOrderStatus(OrderStatus.PREPARING), 3000);
       setTimeout(() => setOrderStatus(OrderStatus.ON_THE_WAY), 8000);
       setTimeout(() => setOrderStatus(OrderStatus.DELIVERED), 20000);
     }, 3500);
   };
 
+  const totalAccumulatedFavors = orderHistory.reduce((acc, order) => acc + order.totalFavors, 0);
+
+  const categories: Category[] = ['Cibo', 'Amore', 'Logistica'];
+  
+  const categoryMeta: Record<string, { emoji: string; color: string; icon: any; glow: string }> = {
+    'Cibo': { emoji: '🍣', color: 'bg-rose-500', glow: 'shadow-rose-500/30', icon: Utensils },
+    'Amore': { emoji: '❤️', color: 'bg-red-600', glow: 'shadow-red-600/30', icon: HeartIcon },
+    'Logistica': { emoji: '✈️', color: 'bg-rose-400', glow: 'shadow-rose-400/30', icon: Car },
+    'Tutti': { emoji: '✨', color: 'bg-zinc-800', glow: 'shadow-zinc-800/30', icon: Sparkles }
+  };
+
+  // Reusable Quote Component
+  const LoveQuote = () => (
+    <section className="bg-zinc-900 border border-white/5 rounded-[3rem] p-10 text-center space-y-6 relative overflow-hidden group">
+      <div className="relative z-10 space-y-4">
+         <div className="flex justify-center gap-1">
+           {[1,2,3,4,5].map(i => <Star key={i} size={14} className="text-rose-500 fill-rose-500" />)}
+         </div>
+         <p className="text-rose-100 font-medium italic text-lg leading-relaxed">
+           "come sempre, farò di tutto per renderti felice. Preparati perchè sto preparando il tuo ordine e quando verrai potrai ritirarlo. Ti amo"
+         </p>
+         <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.4em]">Il tuo Giuseppe</p>
+      </div>
+    </section>
+  );
+
+  if (isProcessing) {
+    return (
+      <div className="fixed inset-0 bg-zinc-950 flex flex-col items-center justify-center z-[300] animate-in fade-in duration-500">
+        <div className="absolute inset-0 bg-rose-600/5 radial-gradient blur-3xl opacity-50" />
+        <div className="relative flex flex-col items-center space-y-8 text-center px-10">
+          <div className="relative">
+            <div className="bg-rose-600 w-24 h-24 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_50px_rgba(225,29,72,0.4)] animate-pulse border border-white/20">
+              <Gift size={40} className="text-white" />
+            </div>
+            <Loader2 className="absolute -inset-4 text-rose-500/30 animate-spin w-32 h-32" strokeWidth={1} />
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-2xl font-black text-white tracking-tighter uppercase">Elaborazione in corso</h2>
+            <p className="text-rose-300 font-bold uppercase tracking-widest text-[10px] animate-pulse h-4">
+              {loadingMessage}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'splash') {
+    return (
+      <div className="fixed inset-0 bg-zinc-950 flex flex-col items-center justify-center z-[200] overflow-hidden px-6">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-rose-600/10 rounded-full blur-[140px] animate-pulse" />
+        
+        <div className="relative flex flex-col items-center max-sm w-full text-center">
+          <div className="relative mb-10 animate-in zoom-in-90 duration-1000">
+            <div className="w-64 h-64 md:w-80 md:h-80 rounded-full border-[6px] border-white shadow-[0_0_80px_rgba(225,29,72,0.5)] overflow-hidden relative z-10">
+              <img 
+                src="https://i.postimg.cc/FHPWpq4G/IMG-4475.jpg" 
+                className="w-full h-full object-cover"
+                alt="Valentina e Giuseppe"
+                style={{ objectPosition: 'center' }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            </div>
+            
+            <div className="absolute -top-4 -right-2 animate-bounce delay-150 z-20">
+              <div className="bg-rose-600 p-4 rounded-[2rem] shadow-2xl border border-white/20">
+                <Heart className="text-white fill-white" size={28} />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+            <div className="space-y-2">
+              <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-white leading-tight">
+                Buon San Valentino
+              </h1>
+              <p className="text-rose-400 text-sm md:text-base font-black uppercase tracking-[0.4em] opacity-90">
+                Valentina's Delivery ❤️
+              </p>
+            </div>
+            
+            <button 
+              onClick={() => setView('selection')}
+              className="group relative mt-10 w-full py-7 bg-white text-zinc-950 rounded-[2.5rem] font-black text-sm uppercase tracking-[0.5em] shadow-[0_25px_60px_rgba(255,255,255,0.1)] active:scale-95 transition-all flex items-center justify-center gap-3 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-rose-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="relative z-10 ml-2">Entra</span>
+              <ChevronRight size={20} className="relative z-10 text-rose-600 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'selection') {
+    return (
+      <div className="h-screen w-full bg-transparent text-white px-6 flex flex-col items-center justify-center animate-in fade-in duration-700 overflow-hidden">
+        <div className="max-w-md w-full flex flex-col items-center justify-center h-full">
+          <header className="text-center space-y-2 mb-10">
+             <div className="flex justify-center mb-4">
+               <Gift className="text-rose-500 animate-bounce" size={40} />
+             </div>
+            <h2 className="text-4xl font-black tracking-tighter leading-tight">Auguri Ninni! ❤️</h2>
+            <p className="text-rose-200/70 font-bold text-sm uppercase tracking-widest px-4">Cosa vorresti oggi?</p>
+          </header>
+
+          <div className="grid grid-cols-2 gap-x-10 gap-y-8">
+            {categories.map((cat) => {
+              const meta = categoryMeta[cat];
+              return (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                    setView('home');
+                  }}
+                  className="flex flex-col items-center gap-3 group"
+                >
+                  <div className={`w-28 h-28 rounded-full ${meta.color} flex items-center justify-center text-4xl shadow-2xl ${meta.glow} transition-all duration-500 group-hover:scale-105 active:scale-90 border-4 border-white/10 group-hover:border-white/40 overflow-hidden relative`}>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent" />
+                    {meta.emoji}
+                  </div>
+                  <span className="font-black text-[10px] uppercase tracking-[0.2em] text-rose-300 group-hover:text-white transition-colors">
+                    {cat}
+                  </span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => {
+                setSelectedCategory('Tutti');
+                setView('home');
+              }}
+              className="flex flex-col items-center gap-3 group"
+            >
+              <div className={`w-28 h-28 rounded-full bg-zinc-800 flex items-center justify-center text-4xl shadow-2xl shadow-zinc-800/30 transition-all duration-500 group-hover:scale-105 active:scale-90 border-4 border-white/10 group-hover:border-white/40 overflow-hidden relative`}>
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent" />
+                ✨
+              </div>
+              <span className="font-black text-[10px] uppercase tracking-[0.2em] text-zinc-500 group-hover:text-white transition-colors">
+                Tutti
+              </span>
+            </button>
+          </div>
+
+          <button 
+            onClick={() => setView('history')}
+            className="mt-14 py-4 px-12 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full text-rose-200 text-[10px] font-black uppercase tracking-[0.25em] hover:bg-rose-600 hover:text-white transition-all active:scale-95 flex items-center gap-2"
+          >
+            <History size={14} /> Vedi lo storico
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const filteredProducts = PRODUCTS.filter(product => 
     selectedCategory === 'Tutti' || product.category === selectedCategory
   );
 
-  const categories = Array.from(new Set(PRODUCTS.map(p => p.category)));
-  const categoryMeta: Record<string, {emoji: string, color: string}> = {
-    'Cibo': { emoji: '🍣', color: 'bg-orange-500/20' },
-    'Amore': { emoji: '❤️', color: 'bg-rose-500/20' },
-    'Logistica': { emoji: '🚗', color: 'bg-blue-500/20' },
-    'Faccende': { emoji: '✨', color: 'bg-purple-500/20' },
-    'Tutti': { emoji: '🌈', color: 'bg-zinc-800' }
-  };
-
-  const totalAccumulatedFavors = orderHistory.reduce((acc, order) => acc + order.totalFavors, 0);
-
-  const LoveQuote = () => (
-    <div className="bg-white/5 border border-white/5 p-8 rounded-[3rem] text-center space-y-3">
-       <p className="text-rose-400 italic font-medium text-sm">"Ogni tuo desiderio è un'occasione per amarti un po' di più."</p>
-       <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">— Il tuo Giuseppe</p>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-transparent text-zinc-100 pb-32 font-['Plus_Jakarta_Sans']">
+    <div className="min-h-screen bg-transparent text-zinc-100 pb-32">
       <nav className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-3xl px-6 py-4 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => {
               if (view === 'history' || view === 'tracking') setView('home');
-              else setView('splash');
+              else setView('selection');
             }}
             className="bg-white/5 p-3 rounded-2xl border border-white/10 active:scale-90 transition-transform"
           >
@@ -187,26 +311,6 @@ const App: React.FC = () => {
           </button>
         </div>
       </nav>
-
-      {view === 'splash' && (
-        <main className="h-[80vh] flex flex-col items-center justify-center p-8 text-center">
-          <div className="relative mb-8 animate-pulse">
-            <Heart size={80} className="text-rose-600 fill-rose-600" />
-          </div>
-          <h1 className="text-4xl font-black mb-4 tracking-tighter uppercase italic">
-            Vale <span className="text-rose-500">Delivery</span>
-          </h1>
-          <p className="text-zinc-400 max-w-xs mb-10 font-medium leading-relaxed">
-            Il tuo servizio privato di coccole, cibo e amore.
-          </p>
-          <button 
-            onClick={() => setView('home')}
-            className="w-full max-w-xs bg-white text-zinc-950 py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all"
-          >
-            Entra nel Cuore
-          </button>
-        </main>
-      )}
 
       {view === 'home' && (
         <main className="animate-in fade-in slide-in-from-bottom-2 duration-700 relative z-10">
@@ -241,8 +345,7 @@ const App: React.FC = () => {
               <ProductCard 
                 key={product.id} 
                 product={product} 
-                quantity={cart.find(i => i.id === product.id)?.quantity || 0}
-                onUpdate={updateQuantity} 
+                onAddToCart={addToCart} 
               />
             ))}
           </div>
@@ -367,17 +470,6 @@ const App: React.FC = () => {
             </button>
           </div>
         </main>
-      )}
-
-      {/* Processing Overlay */}
-      {isProcessing && (
-        <div className="fixed inset-0 bg-zinc-950/90 backdrop-blur-xl z-[100] flex flex-col items-center justify-center p-8 text-center">
-           <div className="relative mb-8">
-              <div className="absolute inset-0 bg-rose-500 blur-3xl opacity-30 animate-pulse"></div>
-              <Loader2 size={80} className="text-rose-500 animate-spin relative z-10" />
-           </div>
-           <p className="text-2xl font-black italic uppercase tracking-tighter animate-pulse text-white">{loadingMessage}</p>
-        </div>
       )}
 
       <Cart 
