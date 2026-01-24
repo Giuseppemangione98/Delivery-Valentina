@@ -218,13 +218,19 @@ const App: React.FC = () => {
             </div>
             
             <button 
-              onClick={() => setView('selection')}
-              className="group relative mt-10 w-full py-7 bg-white text-zinc-950 rounded-[2.5rem] font-black text-sm uppercase tracking-[0.5em] shadow-[0_25px_60px_rgba(255,255,255,0.1)] active:scale-95 transition-all flex items-center justify-center gap-3 overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-rose-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <span className="relative z-10 ml-2">Entra</span>
-              <ChevronRight size={20} className="relative z-10 text-rose-600 group-hover:translate-x-1 transition-transform" />
-            </button>
+  onClick={() => {
+    // Chiede il permesso quando clicchi "Entra"
+    if ("Notification" in window) {
+      Notification.requestPermission().then(permission => {
+        console.log("Stato permesso:", permission);
+      });
+    }
+    setView('selection');
+  }} 
+  className="w-full py-7 bg-white text-zinc-950 rounded-[2.5rem] font-black uppercase tracking-[0.5em]"
+>
+  Entra
+</button>
           </div>
         </div>
       </div>
