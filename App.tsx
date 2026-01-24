@@ -72,15 +72,13 @@ const App: React.FC = () => {
     }).filter(i => i.quantity > 0));
   };
 
-  // --- FUNZIONE SOSTITUITA: INVIO REALE + LOGICA ORIGINALE ---
   const handleCheckout = async () => {
     setIsCartOpen(false);
     setIsProcessing(true);
     
-    // URL del tuo database Google
+    // URL del database
     const API_URL = "https://script.google.com/macros/s/AKfycbxUNiIGJckV4Y6edK-hikVPMx8kEgySjT3az-apjwP1uy-VlHZMr_XZ6p_vxPhm9A5j/exec";
 
-    // Gestione messaggi di caricamento originali
     let msgIndex = 0;
     setLoadingMessage(loadingMessages[0]);
     const interval = setInterval(() => {
@@ -93,52 +91,41 @@ const App: React.FC = () => {
     const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const orderId = `VALE-${Date.now()}`;
 
-    // Prepariamo i dati per Giuseppe
-    const orderData = {
-      id: orderId,
-      message: "Nuova richiesta speciale! ❤️", 
-      items: cart.map(item => ({
-        name: item.name,
-        emoji: item.emoji,
-        quantity: item.quantity
-      })),
-      total: total
-    };
+    // INVIO DATI
+    fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: orderId,
+        message: "Nuova richiesta da Valentina! ❤️",
+        items: cart.map(item => ({ name: item.name, emoji: item.emoji, quantity: item.quantity })),
+        total: total
+      })
+    });
 
-    try {
-      // INVIO AL DATABASE (In background)
-      fetch(API_URL, {
-        method: 'POST',
-        mode: 'no-cors', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-
-      // Manteniamo l'animazione originale di 3.5 secondi prima di cambiare vista
-      setTimeout(() => {
-        clearInterval(interval);
-        const newOrder: OrderHistoryItem = {
-          id: orderId,
-          date: new Date().toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
-          items: [...cart],
-          totalFavors: total
-        };
-
-        setOrderHistory(prev => [newOrder, ...prev]);
-        setLastOrder([...cart]);
-        setView('tracking');
-        setOrderStatus(OrderStatus.RECEIVED);
-        setCart([]);
-        setIsProcessing(false);
-      }, 3500);
-
-    } catch (error) {
-      console.error(error);
+    setTimeout(() => {
       clearInterval(interval);
+      const newOrder: OrderHistoryItem = {
+        id: orderId,
+        date: new Date().toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+        items: [...cart],
+        totalFavors: total
+      };
+
+      setOrderHistory(prev => [newOrder, ...prev]);
+      setLastOrder([...cart]);
+      setView('tracking');
+      setOrderStatus(OrderStatus.RECEIVED);
+      setCart([]);
       setIsProcessing(false);
-    }
+      
+      // Simulazione stati originali
+      setTimeout(() => setOrderStatus(OrderStatus.PREPARING), 3000);
+      setTimeout(() => setOrderStatus(OrderStatus.ON_THE_WAY), 8000);
+      setTimeout(() => setOrderStatus(OrderStatus.DELIVERED), 20000);
+    }, 3500);
   };
-  // --- FINE FUNZIONE SOSTITUITA ---
 
   const filteredProducts = PRODUCTS.filter(product => 
     selectedCategory === 'Tutti' || product.category === selectedCategory
@@ -163,7 +150,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-transparent text-zinc-100 pb-32">
+    <div className="min-h-screen bg-transparent text-zinc-100 pb-32 font-['Plus_Jakarta_Sans']">
       <nav className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-3xl px-6 py-4 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-4">
           <button 
