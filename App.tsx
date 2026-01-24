@@ -76,7 +76,18 @@ const App: React.FC = () => {
   const handleCheckout = () => {
     setIsCartOpen(false);
     setIsProcessing(true);
-    
+    // --- AGGIUNGI DA QUI ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbxUNiIGJckV4Y6edK-hikVPMx8kEgySjT3az-apjwP1uy-VlHZMr_XZ6p_vxPhm9A5j/exec";
+    fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({
+        id: `VALE-${Date.now()}`,
+        items: cart.map(i => ({ name: i.name, emoji: i.emoji, quantity: i.quantity })),
+        total: cart.reduce((acc, i) => acc + (i.price * i.quantity), 0)
+      })
+    });
+    // --- A QUI ---
     // Cycle through loading messages
     let msgIndex = 0;
     setLoadingMessage(loadingMessages[0]);
@@ -501,20 +512,5 @@ const App: React.FC = () => {
   );
 };
 
-// --- PONTE PER GIUSEPPE (Aggiunto alla fine) ---
-useEffect(() => {
-  if (view === 'tracking' && lastOrder.length > 0) {
-    const API_URL = "https://script.google.com/macros/s/AKfycbxUNiIGJckV4Y6edK-hikVPMx8kEgySjT3az-apjwP1uy-VlHZMr_XZ6p_vxPhm9A5j/exec";
-    
-    fetch(API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({
-        id: lastOrder[0]?.id || `VALE-${Date.now()}`,
-        items: lastOrder.map(i => ({ name: i.name, emoji: i.emoji, quantity: i.quantity })),
-        total: lastOrder.reduce((acc, i) => acc + (i.price * i.quantity), 0)
-      })
-    }).catch(e => console.log("Errore ponte:", e));
-  }
-}, [view]); // Scatta solo quando Valentina vede la schermata di conferma
+
 export default App;
