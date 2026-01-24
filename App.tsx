@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PRODUCTS } from './constants.tsx';
 import { CartItem, Product, OrderStatus, Category, Location, OrderHistoryItem } from './types';
@@ -73,6 +72,7 @@ const App: React.FC = () => {
     }).filter(i => i.quantity > 0));
   };
 
+  // --- FUNZIONE SOSTITUITA: INVIO REALE + LOGICA ORIGINALE ---
   const handleCheckout = async () => {
     setIsCartOpen(false);
     setIsProcessing(true);
@@ -138,8 +138,28 @@ const App: React.FC = () => {
       setIsProcessing(false);
     }
   };
+  // --- FINE FUNZIONE SOSTITUITA ---
+
   const filteredProducts = PRODUCTS.filter(product => 
     selectedCategory === 'Tutti' || product.category === selectedCategory
+  );
+
+  const categories = Array.from(new Set(PRODUCTS.map(p => p.category)));
+  const categoryMeta: Record<string, {emoji: string, color: string}> = {
+    'Cibo': { emoji: '🍣', color: 'bg-orange-500/20' },
+    'Amore': { emoji: '❤️', color: 'bg-rose-500/20' },
+    'Logistica': { emoji: '🚗', color: 'bg-blue-500/20' },
+    'Faccende': { emoji: '✨', color: 'bg-purple-500/20' },
+    'Tutti': { emoji: '🌈', color: 'bg-zinc-800' }
+  };
+
+  const totalAccumulatedFavors = orderHistory.reduce((acc, order) => acc + order.totalFavors, 0);
+
+  const LoveQuote = () => (
+    <div className="bg-white/5 border border-white/5 p-8 rounded-[3rem] text-center space-y-3">
+       <p className="text-rose-400 italic font-medium text-sm">"Ogni tuo desiderio è un'occasione per amarti un po' di più."</p>
+       <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">— Il tuo Giuseppe</p>
+    </div>
   );
 
   return (
@@ -149,7 +169,7 @@ const App: React.FC = () => {
           <button 
             onClick={() => {
               if (view === 'history' || view === 'tracking') setView('home');
-              else setView('selection');
+              else setView('splash');
             }}
             className="bg-white/5 p-3 rounded-2xl border border-white/10 active:scale-90 transition-transform"
           >
@@ -180,6 +200,26 @@ const App: React.FC = () => {
           </button>
         </div>
       </nav>
+
+      {view === 'splash' && (
+        <main className="h-[80vh] flex flex-col items-center justify-center p-8 text-center">
+          <div className="relative mb-8 animate-pulse">
+            <Heart size={80} className="text-rose-600 fill-rose-600" />
+          </div>
+          <h1 className="text-4xl font-black mb-4 tracking-tighter uppercase italic">
+            Vale <span className="text-rose-500">Delivery</span>
+          </h1>
+          <p className="text-zinc-400 max-w-xs mb-10 font-medium leading-relaxed">
+            Il tuo servizio privato di coccole, cibo e amore.
+          </p>
+          <button 
+            onClick={() => setView('home')}
+            className="w-full max-w-xs bg-white text-zinc-950 py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all"
+          >
+            Entra nel Cuore
+          </button>
+        </main>
+      )}
 
       {view === 'home' && (
         <main className="animate-in fade-in slide-in-from-bottom-2 duration-700 relative z-10">
@@ -214,7 +254,8 @@ const App: React.FC = () => {
               <ProductCard 
                 key={product.id} 
                 product={product} 
-                onAddToCart={addToCart} 
+                quantity={cart.find(i => i.id === product.id)?.quantity || 0}
+                onUpdate={updateQuantity} 
               />
             ))}
           </div>
@@ -339,6 +380,17 @@ const App: React.FC = () => {
             </button>
           </div>
         </main>
+      )}
+
+      {/* Processing Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-zinc-950/90 backdrop-blur-xl z-[100] flex flex-col items-center justify-center p-8 text-center">
+           <div className="relative mb-8">
+              <div className="absolute inset-0 bg-rose-500 blur-3xl opacity-30 animate-pulse"></div>
+              <Loader2 size={80} className="text-rose-500 animate-spin relative z-10" />
+           </div>
+           <p className="text-2xl font-black italic uppercase tracking-tighter animate-pulse text-white">{loadingMessage}</p>
+        </div>
       )}
 
       <Cart 
