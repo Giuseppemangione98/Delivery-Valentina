@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { PRODUCTS } from './constants.tsx';
+import { PRODUCTS } from './constants';
 import { CartItem, Product, OrderStatus, Category, Location, OrderHistoryItem, isOrderStatus, isOrderHistoryItem, ApiOrderResponse } from './types';
 import ProductCard from './components/ProductCard';
 import Cart from './components/Cart';
 import NotificationBanner from './components/NotificationBanner';
-import { Heart, ArrowLeft, CheckCircle2, ShoppingBag, Utensils, Sparkles, Car, Heart as HeartIcon, Gift, Clock, Star, Sparkle, ChevronRight, History, Wallet, Loader2 } from 'lucide-react';
+import { Heart, ArrowLeft, CheckCircle2, ShoppingBag, Utensils, Sparkles, Car, Heart as HeartIcon, Gift, Clock, Star, Sparkle, ChevronRight, History, Wallet, Loader2, X } from 'lucide-react';
+import { requestNotificationPermission, onMessageListener } from './firebase/messaging';
 
 type AppView = 'splash' | 'selection' | 'home' | 'tracking' | 'history';
 
@@ -23,6 +24,7 @@ const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [orderHistory, setOrderHistory] = useState<OrderHistoryItem[]>([]);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const loadingMessages = [
     "Confezionando i tuoi desideri con amore...",
@@ -44,11 +46,32 @@ const App: React.FC = () => {
       }
     }
 
+    // Registra il service worker principale
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js')
         .then(() => console.log('Service Worker Registrato!'))
         .catch(err => console.log('Errore SW:', err));
     }
+
+    // Ascolta le notifiche Firebase quando l'app è aperta (foreground)
+    const unsubscribe = onMessageListener((payload) => {
+      console.log('📨 Notifica Firebase ricevuta in foreground:', payload);
+      
+      // Mostra un toast con il messaggio della notifica
+      if (payload.notification) {
+        setToast({
+          message: payload.notification.body || payload.notification.title || 'Nuovo messaggio da Giuseppe ❤️',
+          type: 'info'
+        });
+      }
+    });
+
+    // Cleanup quando il componente viene smontato
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -298,9 +321,29 @@ const App: React.FC = () => {
         <p className="text-rose-400 text-[10px] font-black uppercase tracking-[0.4em] mb-12">Valentina's Delivery ❤️</p>
         <button 
           onClick={async () => {
-            if (typeof window !== 'undefined' && "Notification" in window) {
-              await Notification.requestPermission();
+            try {
+              // Richiedi permesso notifiche Firebase
+              const token = await requestNotificationPermission();
+              
+              if (token) {
+                // Token ottenuto con successo (già salvato in localStorage)
+                console.log('✅ Token FCM salvato:', token);
+              } else {
+                // Permesso negato o errore (non bloccante)
+                setToast({
+                  message: 'Le notifiche push non sono attive. Puoi attivarle dalle impostazioni del browser.',
+                  type: 'info'
+                });
+              }
+            } catch (error) {
+              console.error('Errore nella richiesta permesso notifiche:', error);
+              // Non bloccare l'app in caso di errore
+              setToast({
+                message: 'Impossibile attivare le notifiche. Puoi continuare comunque.',
+                type: 'error'
+              });
             }
+            
             setView('selection');
           }} 
           className="w-full py-7 bg-white text-zinc-950 rounded-[2.5rem] font-black uppercase tracking-[0.5em]"
@@ -466,8 +509,44 @@ const App: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Toast per notifiche e messaggi */}
+      {toast && (
+        <div className={`fixed top-20 left-0 right-0 px-6 z-[250] animate-in slide-in-from-top duration-300`}>
+          <div className={`${
+            toast.type === 'success' ? 'bg-rose-600' : 
+            toast.type === 'error' ? 'bg-red-600' : 
+            'bg-zinc-800'
+          } rounded-3xl p-4 shadow-2xl border border-white/20 flex items-center justify-between gap-4`}>
+            <p className="text-white font-black text-sm uppercase tracking-tight flex-1">
+              {toast.message}
+            </p>
+            <button
+              onClick={() => setToast(null)}
+              className="text-white/80 hover:text-white transition-colors flex-shrink-0"
+              aria-label="Chiudi"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-dismiss toast dopo 5 secondi */}
+      {toast && <ToastAutoDismiss onDismiss={() => setToast(null)} />}
     </div>
   );
+};
+
+// Componente helper per auto-dismiss del toast
+const ToastAutoDismiss: React.FC<{ onDismiss: () => void }> = ({ onDismiss }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onDismiss();
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
+  return null;
 };
 
 export default App;
