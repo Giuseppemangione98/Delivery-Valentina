@@ -1,7 +1,13 @@
 {
   "functions": {
-    "api/save-token.js": { "runtime": "nodejs18.x" },
-    "api/esito-ordine.js": { "runtime": "nodejs18.x" },
-    "api/ordine.js": { "runtime": "nodejs18.x" }
+    "api/save-token.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/esito-ordine.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/ordine.js": {
+      "runtime": "nodejs18.x"
+    }
   }
 }
