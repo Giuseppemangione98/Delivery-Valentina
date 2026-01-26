@@ -26,6 +26,70 @@ if (!admin.apps.length) {
 }
 
 /**
+ * Invia notifica al frontoffice quando l'ordine viene esitato
+ * @param {string} tokenFrontoffice - Token FCM del frontoffice (Valentina)
+ * @param {string} statoOrdine - Stato dell'ordine (es. "preparato", "in consegna", "consegnato")
+ */
+async function inviaNotificaFrontoffice(tokenFrontoffice, statoOrdine) {
+  try {
+    await admin.messaging().send({
+      token: tokenFrontoffice,
+      notification: {
+        title: "Ordine esitato!",
+        body: `Il tuo ordine è stato ${statoOrdine}`,
+      },
+      data: {
+        ordineId: Date.now().toString(),
+        stato: statoOrdine,
+      },
+    });
+    console.log('✅ Notifica inviata al frontoffice');
+  } catch (error) {
+    console.error('❌ Errore invio notifica frontoffice:', error);
+  }
+}
+
+/**
+ * Handler per gestire l'esito dell'ordine dal backoffice
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+async function handleEsitoOrdine(req, res) {
+  try {
+    const { statoOrdine, tokenFrontoffice } = req.body;
+
+    if (!statoOrdine) {
+      return res.status(400).json({ error: 'Stato ordine mancante' });
+    }
+
+    if (!tokenFrontoffice) {
+      return res.status(400).json({ error: 'Token frontoffice mancante' });
+    }
+
+    console.log('📋 Esito ordine ricevuto dal backoffice:', {
+      statoOrdine,
+      data: new Date().toLocaleString('it-IT')
+    });
+
+    // Invia notifica al frontoffice
+    if (admin.apps.length > 0) {
+      await inviaNotificaFrontoffice(tokenFrontoffice, statoOrdine);
+    } else {
+      console.warn('⚠️ Firebase Admin non inizializzato');
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Notifica inviata al frontoffice'
+    });
+
+  } catch (error) {
+    console.error('❌ Errore:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/**
  * Handler per gestire gli ordini da Valentina
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
@@ -104,3 +168,4 @@ async function handleOrdine(req, res) {
 }
 
 export default handleOrdine;
+export { handleEsitoOrdine };

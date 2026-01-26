@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '.env') });
 
-import handleOrdine from './invia-ordine.js';
+import handleOrdine, { handleEsitoOrdine } from './invia-ordine.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -43,6 +43,27 @@ app.post('/api/ordine', async (req, res) => {
 
 // Gestione OPTIONS per CORS preflight
 app.options('/api/ordine', (req, res) => {
+  res.status(200).end();
+});
+
+// Endpoint per salvare il token FCM del frontoffice
+app.post('/api/save-token', async (req, res) => {
+  const { token } = req.body;
+  if (!token) {
+    return res.status(400).json({ error: 'Token FCM mancante' });
+  }
+  // Qui salveremo il token (es. in Google Sheets o DB)
+  console.log('✅ Token frontoffice salvato:', token);
+  res.status(200).json({ success: true });
+});
+
+// Endpoint per gestire l'esito dell'ordine dal backoffice
+app.post('/api/esito-ordine', async (req, res) => {
+  await handleEsitoOrdine(req, res);
+});
+
+// Gestione OPTIONS per CORS preflight
+app.options('/api/esito-ordine', (req, res) => {
   res.status(200).end();
 });
 

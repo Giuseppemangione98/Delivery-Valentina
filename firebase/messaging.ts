@@ -84,6 +84,19 @@ export async function requestNotificationPermission(): Promise<string | null> {
           // Salva il token in localStorage per uso futuro
           localStorage.setItem('fcm_token', token);
           
+          // Invia il token al backend per salvataggio
+          try {
+            await fetch('http://localhost:3001/api/save-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: token }),
+            });
+            console.log("✅ Token FCM inviato al backend");
+          } catch (fetchError) {
+            console.error("❌ Errore nell'invio del token al backend:", fetchError);
+            // Non bloccare il flusso se il salvataggio fallisce
+          }
+          
           return token;
         } else {
           console.warn("⚠️ Nessun token FCM disponibile. Verifica la configurazione Firebase.");
