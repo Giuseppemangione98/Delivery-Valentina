@@ -27,3 +27,6 @@ dist-ssr
 api/.env
 .env
 *.env
+api/.env
+.env
+*.env
