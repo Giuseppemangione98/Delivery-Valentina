@@ -20,6 +20,7 @@ export interface OrderHistoryItem {
   date: string;
   items: CartItem[];
   totalFavors: number;
+  status: OrderStatus;
 }
 
 export enum OrderStatus {
@@ -32,4 +33,26 @@ export enum OrderStatus {
 export interface Location {
   lat: number;
   lng: number;
+}
+
+// Type guard functions
+export function isOrderStatus(value: unknown): value is OrderStatus {
+  return typeof value === 'string' && Object.values(OrderStatus).includes(value as OrderStatus);
+}
+
+export function isOrderHistoryItem(value: unknown): value is OrderHistoryItem {
+  if (!value || typeof value !== 'object') return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.id === 'string' &&
+    typeof obj.date === 'string' &&
+    Array.isArray(obj.items) &&
+    typeof obj.totalFavors === 'number' &&
+    isOrderStatus(obj.status)
+  );
+}
+
+export interface ApiOrderResponse {
+  status?: string;
+  [key: string]: unknown;
 }
